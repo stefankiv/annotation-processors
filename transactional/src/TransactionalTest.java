@@ -1,5 +1,7 @@
 import java.util.Optional;
 
+// compile with TransactionalAnnotationProcessor or transactional.jar in classpath.
+
 public class TransactionalTest {
     @Transactional
     public Optional<String> findNameById(final Long id) {

@@ -1,5 +1,7 @@
 import java.util.concurrent.TimeUnit;
 
+// compile with SneakyAnnotationProcessor or sneaky.jar in classpath.
+
 public class SneakyTest {
     @Sneaky
     public static void main(String[] args) {

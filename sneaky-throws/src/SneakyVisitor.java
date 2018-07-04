@@ -16,32 +16,48 @@ public class SneakyVisitor extends TreeTranslator {
     @Override
     public void visitMethodDef(final JCTree.JCMethodDecl tree) {
         super.visitMethodDef(tree);
+        tree.body.stats = wrapWithTryCatch(tree.getBody());
+    }
 
-        final List<JCTree.JCStatement> originalMethodBody = tree.getBody().getStatements();
+    /**
+     * Wraps original method body with try-catch.
+     *
+     * <code>
+     *     try {
+     *         original method body
+     *     } catch (Throwable t) {
+     *         throw SneakyUtil.sneakyThrow(t);
+     *     }
+     * </code>
+     */
+    private List<JCTree.JCStatement> wrapWithTryCatch(final JCTree.JCBlock originalMethodBlock) {
+        // sneakyThrowMethod:
+        //  SneakyUtil.sneakyThrow
+        final JCTree.JCFieldAccess sneakyThrowMethod = make.Select(
+                make.Ident(names.fromString("SneakyUtil")),
+                names.fromString("sneakyThrow")
+        );
 
-        final JCTree.JCBlock tryBlock = make.Block(0, originalMethodBody);
-
-        final List<JCTree.JCCatch> catchers = List.of(
-                make.Catch(
-                        make.VarDef(
-                                make.Modifiers(0),
-                                names.fromString("t"),
-                                make.Ident(names.fromString("Throwable")),
-                                null
+        // catchers:
+        //  catch(Throwable t) {
+        //      throw SneakyUtil.sneakyThrow(t);
+        //  }
+        final List<JCTree.JCCatch> catchers = List.of(                                              // list of catch statements
+                make.Catch(                                                                         // catch parameter
+                        make.VarDef(                                                                // exception variable declaration
+                                make.Modifiers(0),                                                  // no modifiers
+                                names.fromString("t"),                                              // variable name
+                                make.Ident(names.fromString("Throwable")),                          // variable type
+                                null                                                                // variable init expression
                         ),
-                        make.Block(
-                                0,
-                                List.of(
-                                        make.Throw(
-                                                make.Apply(
-                                                        List.nil(),
-                                                        make.Select(
-                                                                make.Ident(names.fromString("SneakyUtil")),
-                                                                names.fromString("sneakyThrow")
-                                                        ),
-                                                        List.of(
-                                                                make.Ident(names.fromString("t"))
-                                                        )
+                        make.Block(                                                                 // catch block
+                                0,                                                                  // no flags (e.g. static)
+                                List.of(                                                            // list of block expressions
+                                        make.Throw(                                                 // throw statement
+                                                make.Apply(                                         // method invocation
+                                                        List.nil(),                                 // method type arguments
+                                                        sneakyThrowMethod,                          // method expression
+                                                        List.of(make.Ident(names.fromString("t")))  // method arguments
                                                 )
                                         )
                                 )
@@ -49,9 +65,11 @@ public class SneakyVisitor extends TreeTranslator {
                 )
         );
 
-        tree.body.stats = List.of(
-                make.Try(tryBlock, catchers, null)
+        //  try {
+        //      +originalMethodBlock+
+        //  } +catchers+
+        return List.of(
+                make.Try(originalMethodBlock, catchers, null)
         );
     }
-
 }

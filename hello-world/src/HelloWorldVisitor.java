@@ -24,7 +24,17 @@ public class HelloWorldVisitor extends TreeTranslator {
         tree.defs = tree.defs.append(createHelloWorldMethod());
     }
 
+    /**
+     * Generate:
+     * <code>
+     *  public static void main(final String[] args) {
+     *      System.out.println("Hello, World!");
+     *  }
+     * </code>
+     */
     private JCTree createHelloWorldMethod() {
+        // println:
+        //  System.out.println
         final JCTree.JCFieldAccess println = make.Select(
                 make.Select(
                         make.Ident(names.fromString("System")),
@@ -33,36 +43,44 @@ public class HelloWorldVisitor extends TreeTranslator {
                 names.fromString("println")
         );
 
-        final JCTree.JCBlock methodBody = make.Block(0,
-                List.of(
-                        make.Exec(
-                                make.Apply(
-                                        List.nil(),
-                                        println,
-                                        List.of(make.Literal("Hello, World!"))
+        // methodBody:
+        //  {
+        //      System.out.println("Hello, World!");
+        //  }
+        final JCTree.JCBlock methodBody = make.Block(0,                         // create block
+                List.of(                                                        // list of statements, included in the block
+                        make.Exec(                                              // execute some expression
+                                make.Apply(                                     // create method (or variable accessing) invocation expression
+                                        List.nil(),                             // method type arguments
+                                        println,                                // method expression
+                                        List.of(make.Literal("Hello, World!"))  // method arguments
                                 )
                         )
                 )
         );
 
-        final List<JCTree.JCVariableDecl> params = List.of(
-                make.VarDef(
-                        make.Modifiers(Flags.FINAL | Flags.PARAMETER),
-                        names.fromString("args"),
-                        make.Type(new Type.ArrayType(symbols.stringType, symbols.arrayClass)),
-                        null
+        // params:
+        //  [final String[] args]
+        final List<JCTree.JCVariableDecl> params = List.of(                                     // list of parameters
+                make.VarDef(                                                                    // variable declaration
+                        make.Modifiers(Flags.FINAL | Flags.PARAMETER),                          // variable modifiers
+                        names.fromString("args"),                                               // variable name
+                        make.Type(new Type.ArrayType(symbols.stringType, symbols.arrayClass)),  // variable type
+                        null                                                                    // variable init expression
                 )
         );
-        return make.MethodDef(
-                make.Modifiers(Flags.PUBLIC | Flags.STATIC),
-                names.fromString("main"),
-                make.Type(symbols.voidType),
-                List.nil(),
-                params,
-                List.nil(),
-                methodBody,
-                null
+
+        // method:
+        //  public static void main(+params+) +methodBody+
+        return make.MethodDef(                                  // create method declaration
+                make.Modifiers(Flags.PUBLIC | Flags.STATIC),    // method modifiers
+                names.fromString("main"),                       // method name
+                make.Type(symbols.voidType),                    // method return type
+                List.nil(),                                     // method type arguments
+                params,                                         // method arguments
+                List.nil(),                                     // method thrown exceptions
+                methodBody,                                     // method body
+                null                                            // method default value (for annotations)
         );
     }
-
 }
