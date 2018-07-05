@@ -13,11 +13,6 @@ public class TransactionalTest {
         return Optional.empty();
     }
 
-    @Transactional
-    private Optional<User> findById1(final Long id) {
-        return Optional.empty();
-    }
-
     static class User {
         String name;
     }
